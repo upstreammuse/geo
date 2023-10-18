@@ -61,7 +61,7 @@ void direct(double* phi2, double* L, double* alpha2, double phi1, double s, doub
    /* 8 */
    double term8and12 = sinU1 * sinSigma - cosU1 * cosSigma * cosAlpha1;
    *phi2 = atan2(sinU1 * cosSigma + cosU1 * sinSigma * cosAlpha1,
-                 (1-f) * sqrt(sinSqAlpha + term8and12 * term8and12));
+                 (1 - f) * sqrt(sinSqAlpha + term8and12 * term8and12));
 
    /* 9 */
    const double lambda = atan2(sinSigma * sinAlpha1,
