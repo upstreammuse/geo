@@ -44,14 +44,16 @@ int main(void) {
    FILE* f = fopen("GeodTest.dat", "rt");
    double maxThreshold = 0;
    TestCaseDegree maxTestCase;
+   double maxThreshold_rb = 0;
+   TestCaseDegree maxTestCase_rb;
    while (fgets(buffer, 999, f) != NULL) {
-      /* read inputs */
+      /* read test case inputs */
       TestCaseDegree tc;
       sscanf(buffer, "%lf %lf %lf %lf %lf %lf %lf",
              &tc.start.lat, &tc.start.lon, &tc.rb.ini, &tc.end.lat, &tc.end.lon,
              &tc.rb.fin, &tc.rb.range);
 
-      /* calculate results */
+      /* calculate endpoint results */
       TestCaseDegree myTC;
       {
          TestCaseRadian myTCR;
@@ -60,7 +62,16 @@ int main(void) {
          tcToDegree(&myTC, myTCR);
       }
 
-      /* save worst test case for comparison */
+      /* calculate range/bearing results */
+      TestCaseDegree myTC_rb;
+      {
+         TestCaseRadian myTCR;
+         tcToRadian(&myTCR, tc);
+         rangeBearing(&myTCR.rb, myTCR.start, myTCR.end);
+         tcToDegree(&myTC_rb, myTCR);
+      }
+
+      /* save worst endpoint test case for comparison */
       double threshold = fmax(fmax(fmax(fabs(myTC.end.lat - tc.end.lat),
                                         fabs(myTC.end.lon - tc.end.lon)),
                                    fabs(myTC.rb.ini - tc.rb.ini)),
@@ -68,6 +79,15 @@ int main(void) {
       if (threshold > maxThreshold) {
          maxTestCase = myTC;
          maxThreshold = threshold;
+      }
+
+      /* save worst range/bearing test case for comparison */
+      threshold = fmax(fmax(fabs(myTC_rb.rb.range - tc.rb.range),
+                            fabs(myTC_rb.rb.ini - tc.rb.ini)),
+                       fabs(myTC_rb.rb.fin - tc.rb.fin));
+      if (threshold > maxThreshold_rb) {
+         maxTestCase_rb = myTC_rb;
+         maxThreshold_rb = threshold;
       }
 
       /* increment the counter matching the threshold difference */
@@ -87,8 +107,11 @@ int main(void) {
       printf("%d lat, %d lon, %d bearing within %e\n", latcounts[i], 
              loncounts[i], bearingcounts[i], thresholds[i]);
    }
-   printf("Worst test case: ");
+   printf("Worst endpoint test case: ");
    printTestCaseDegree(maxTestCase);
    printf("\nOff by: %e\n", maxThreshold);
+   printf("Worst range/bearing test case: ");
+   printTestCaseDegree(maxTestCase_rb);
+   printf("\nOff by: %e\n", maxThreshold_rb);
    return 0;
 }
