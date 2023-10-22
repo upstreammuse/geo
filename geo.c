@@ -2,6 +2,46 @@
 
 #include <math.h>
 
+#define DEGREES(rad) (rad / M_PI * 180)
+#define RADIANS(deg) (deg / 180 * M_PI)
+
+void posToDegree(PositionDegree* out, PositionRadian in) {
+   out->lat = DEGREES(in.lat);
+   out->lon = DEGREES(in.lon);
+}
+
+void posToRadian(PositionRadian* out, PositionDegree in) {
+   out->lat = RADIANS(in.lat);
+   out->lon = RADIANS(in.lon);
+}
+
+void rbToDegree(RangeBearingDegree* out, RangeBearingRadian in) {
+   out->range = in.range;
+   out->ini = DEGREES(in.ini);
+   out->fin = DEGREES(in.fin);
+}
+
+void rbToRadian(RangeBearingRadian* out, RangeBearingDegree in) {
+   out->range = in.range;
+   out->ini = RADIANS(in.ini);
+   out->fin = RADIANS(in.fin);
+}
+
+void endpoint(PositionRadian* end, RangeBearingRadian* rb,
+              PositionRadian start) {
+   direct(&end->lat, &end->lon, &rb->fin, start.lat, rb->range, rb->ini);
+   end->lon += start.lon;
+   if (end->lon < -M_PI) {
+      end->lon += 2 * M_PI;
+   }
+   if (end->lon > M_PI) {
+      end->lon -= 2 * M_PI;
+   }
+   if (rb->fin < 0) {
+      rb->fin += 2 * M_PI;
+   }
+}
+
 void direct(double* phi2, double* L, double* alpha2, double phi1, double s, double alpha1) {
    /* WGS-84 definitions */
    const double a = 6378137.0;
@@ -49,7 +89,7 @@ void direct(double* phi2, double* L, double* alpha2, double phi1, double s, doub
       const double sinSqSigma = sinSigma * sinSigma;
       cosTwoSigmaM = cos(twoSigmaM);
       cosSqTwoSigmaM = cosTwoSigmaM * cosTwoSigmaM;
-      const double deltaSigma = B * sinSigma * (cosTwoSigmaM + .25 * B * (cosSigma * (-1 + 2 * cosSqTwoSigmaM) - 1.0/6.0 * B * cosTwoSigmaM * (-3 + 4 * sinSqSigma) * (-3 + 4 * cosSqTwoSigmaM)));
+      const double deltaSigma = B * sinSigma * (cosTwoSigmaM + B / 4 * (cosSigma * (-1 + 2 * cosSqTwoSigmaM) - B / 6 * cosTwoSigmaM * (-3 + 4 * sinSqSigma) * (-3 + 4 * cosSqTwoSigmaM)));
 
       /* 7 */
       oldSigma = sigma;
