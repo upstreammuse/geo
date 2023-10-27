@@ -33,22 +33,24 @@ int printTestCaseDegree(TestCaseDegree tc) {
                  tc.end.lon, tc.rb.fin);
 }
 
-double maxFinError = -1;
-TestCaseDegree maxFinErrorCase;
-double maxEndLatError = -1;
-TestCaseDegree maxEndLatErrorCase;
-double maxEndLonError = -1;
-TestCaseDegree maxEndLonErrorCase;
+struct {
+   double maxFinError;
+   TestCaseDegree maxFinErrorCase;
+   double maxEndLatError;
+   TestCaseDegree maxEndLatErrorCase;
+   double maxEndLonError;
+   TestCaseDegree maxEndLonErrorCase;
+} endpointResults = {.maxFinError = -1, .maxEndLatError = -1, .maxEndLonError = -1};
 
 void printEndpointResults() {
-   printf("Worst final bearing error: %e\n", maxFinError);
-   printTestCaseDegree(maxFinErrorCase);
+   printf("Worst final bearing error: %e\n", endpointResults.maxFinError);
+   printTestCaseDegree(endpointResults.maxFinErrorCase);
    printf("\n");
-   printf("Worst end latitude error: %e\n", maxEndLatError);
-   printTestCaseDegree(maxEndLatErrorCase);
+   printf("Worst end latitude error: %e\n", endpointResults.maxEndLatError);
+   printTestCaseDegree(endpointResults.maxEndLatErrorCase);
    printf("\n");
-   printf("Worst end longitude error: %e\n", maxEndLonError);
-   printTestCaseDegree(maxEndLonErrorCase);
+   printf("Worst end longitude error: %e\n", endpointResults.maxEndLonError);
+   printTestCaseDegree(endpointResults.maxEndLonErrorCase);
    printf("\n");
 }
 
@@ -65,19 +67,69 @@ void endpointTest(TestCaseDegree const tc) {
    // best we can get convering to radians and back
    assert(fabs(tc.rb.ini - workingD.rb.ini) < 1e-13);
    double error = fabs(tc.rb.fin - workingD.rb.fin);
-   if (error > maxFinError) {
-      maxFinError = error;
-      maxFinErrorCase = tc;
+   if (error > endpointResults.maxFinError) {
+      endpointResults.maxFinError = error;
+      endpointResults.maxFinErrorCase = tc;
    }
    error = fabs(tc.end.lat - workingD.end.lat);
-   if (error > maxEndLatError) {
-      maxEndLatError = error;
-      maxEndLatErrorCase = tc;
+   if (error > endpointResults.maxEndLatError) {
+      endpointResults.maxEndLatError = error;
+      endpointResults.maxEndLatErrorCase = tc;
    }
    error = fabs(tc.end.lon - workingD.end.lon);
-   if (error > maxEndLonError) {
-      maxEndLonError = error;
-      maxEndLonErrorCase = tc;
+   if (error > endpointResults.maxEndLonError) {
+      endpointResults.maxEndLonError = error;
+      endpointResults.maxEndLonErrorCase = tc;
+   }
+}
+
+struct {
+   double maxIniError;
+   TestCaseDegree maxIniErrorCase;
+   double maxFinError;
+   TestCaseDegree maxFinErrorCase;
+   double maxRangeError;
+   TestCaseDegree maxRangeErrorCase;
+} rangeBearingResults = {.maxIniError = -1, .maxFinError = -1, .maxRangeError = -1};
+
+void printRangeBearingResults() {
+   printf("Worst initial bearing error: %e\n", rangeBearingResults.maxIniError);
+   printTestCaseDegree(rangeBearingResults.maxIniErrorCase);
+   printf("\n");
+   printf("Worst final bearing error: %e\n", rangeBearingResults.maxFinError);
+   printTestCaseDegree(rangeBearingResults.maxFinErrorCase);
+   printf("\n");
+   printf("Worst range error: %e\n", rangeBearingResults.maxRangeError);
+   printTestCaseDegree(rangeBearingResults.maxRangeErrorCase);
+   printf("\n");
+}
+
+void rangeBearingTest(TestCaseDegree const tc) {
+   TestCaseRadian workingR;
+   tcToRadian(&workingR, tc);
+   rangeBearing(&workingR.rb, workingR.start, workingR.end);
+   TestCaseDegree workingD;
+   tcToDegree(&workingD, workingR);
+   // best we can get convering to radians and back
+   assert(fabs(tc.start.lat - workingD.start.lat) < 1e-13);
+   assert(tc.start.lon == workingD.start.lon);
+   // best we can get convering to radians and back
+   assert(fabs(tc.end.lat - workingD.end.lat) < 1e-13);
+   assert(fabs(tc.end.lon - workingD.end.lon) < 1e-13);
+   double error = fabs(tc.rb.ini - workingD.rb.ini);
+   if (error > rangeBearingResults.maxIniError) {
+      rangeBearingResults.maxIniError = error;
+      rangeBearingResults.maxIniErrorCase = tc;
+   }
+   error = fabs(tc.rb.fin - workingD.rb.fin);
+   if (error > rangeBearingResults.maxFinError) {
+      rangeBearingResults.maxFinError = error;
+      rangeBearingResults.maxFinErrorCase = tc;
+   }
+   error = fabs(tc.rb.range - workingD.rb.range);
+   if (error > rangeBearingResults.maxRangeError) {
+      rangeBearingResults.maxRangeError = error;
+      rangeBearingResults.maxRangeErrorCase = tc;
    }
 }
 
@@ -93,8 +145,8 @@ int main(void) {
    FILE* f = fopen("GeodTest.dat", "rt");
 //   double maxThreshold = -1;
 //   TestCaseDegree maxTestCase;
-   double maxThreshold_rb = -1;
-   TestCaseDegree maxTestCase_rb;
+//   double maxThreshold_rb = -1;
+//   TestCaseDegree maxTestCase_rb;
    while (fgets(buffer, 999, f) != NULL) {
       /* read test case inputs */
       TestCaseDegree tc;
@@ -113,14 +165,16 @@ int main(void) {
       /* run endpoint test */
       endpointTest(tc);
 
-      /* calculate range/bearing results */
-      TestCaseDegree myTC_rb;
-      {
-         TestCaseRadian myTCR;
-         tcToRadian(&myTCR, tc);
-         rangeBearing(&myTCR.rb, myTCR.start, myTCR.end);
-         tcToDegree(&myTC_rb, myTCR);
-      }
+//      /* calculate range/bearing results */
+//      TestCaseDegree myTC_rb;
+//      {
+//         TestCaseRadian myTCR;
+//         tcToRadian(&myTCR, tc);
+//         rangeBearing(&myTCR.rb, myTCR.start, myTCR.end);
+//         tcToDegree(&myTC_rb, myTCR);
+//      }
+      /* run range/bearing test*/
+      rangeBearingTest(tc);
 
 //      /* save worst endpoint test case for comparison */
 //      double threshold = fmax(fmax(fmax(fabs(myTC.end.lat - tc.end.lat),
@@ -132,14 +186,14 @@ int main(void) {
 //         maxThreshold = threshold;
 //      }
 
-      /* save worst range/bearing test case for comparison */
-      double threshold = fmax(fmax(fabs(myTC_rb.rb.range - tc.rb.range),
-                            fabs(myTC_rb.rb.ini - tc.rb.ini)),
-                       fabs(myTC_rb.rb.fin - tc.rb.fin));
-      if (threshold > maxThreshold_rb) {
-         maxTestCase_rb = myTC_rb;
-         maxThreshold_rb = threshold;
-      }
+//      /* save worst range/bearing test case for comparison */
+//      double threshold = fmax(fmax(fabs(myTC_rb.rb.range - tc.rb.range),
+//                            fabs(myTC_rb.rb.ini - tc.rb.ini)),
+//                       fabs(myTC_rb.rb.fin - tc.rb.fin));
+//      if (threshold > maxThreshold_rb) {
+//         maxTestCase_rb = myTC_rb;
+//         maxThreshold_rb = threshold;
+//      }
 
 //      /* increment the counter matching the threshold difference */
 //      int i = 0;
@@ -155,6 +209,7 @@ int main(void) {
    fclose(f);
 
    printEndpointResults();
+   printRangeBearingResults();
 
 //   for (int i = 0; thresholds[i] != 1e100; i++) {
 //      printf("%d lat, %d lon, %d bearing within %e\n", latcounts[i], 
@@ -163,8 +218,8 @@ int main(void) {
 //   printf("Worst endpoint test case: ");
 //   printTestCaseDegree(maxTestCase);
 //   printf("\nOff by: %e\n", maxThreshold);
-   printf("Worst range/bearing test case: ");
-   printTestCaseDegree(maxTestCase_rb);
-   printf("\nOff by: %e\n", maxThreshold_rb);
+//   printf("Worst range/bearing test case: ");
+//   printTestCaseDegree(maxTestCase_rb);
+//   printf("\nOff by: %e\n", maxThreshold_rb);
    return 0;
 }
