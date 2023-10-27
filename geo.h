@@ -32,3 +32,4 @@ void rangeBearing(RangeBearingRadian*, PositionRadian start, PositionRadian end)
 
 void direct(double* phi2, double* L, double* alpha2, double phi1, double s, double alpha1);
 void inverse(double* s, double* alpha1, double* alpha2, double phi1, double phi2, double L);
+void inverse2(double* s, double* alpha1, double* alpha2, double phi1, double phi2, double L);

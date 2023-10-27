@@ -50,7 +50,7 @@ void rangeBearing(RangeBearingRadian* rb, PositionRadian start, PositionRadian e
    if (L > M_PI) {
       L -= 2 * M_PI;
    }
-   inverse(&rb->range, &rb->ini, &rb->fin, start.lat, end.lat, L);
+   inverse2(&rb->range, &rb->ini, &rb->fin, start.lat, end.lat, L);
 }
 
 void direct(double* phi2, double* L, double* alpha2, double phi1, double s, double alpha1) {
@@ -209,4 +209,105 @@ void inverse(double* s, double* alpha1, double* alpha2, double phi1, double phi2
 
    /* 21 */
    *alpha2 = atan2(cosU1 * sinLambda, -sinU1 * cosU2 + cosU1 * sinU2 * cosLambda);
+}
+
+// from the followup paper
+void inverse2(double* s, double* alpha1, double* alpha2, double phi1, double phi2, double L) {
+   /* WGS-84 definitions */
+   const double a = 6378137.0;
+   const double f = 1 / 298.257223563;
+   const double b = a - a * f;
+
+   // definitions
+   const double tanU1 = (1 - f) * tan(phi1);
+   const double tanU2 = (1 - f) * tan(phi2);
+   /* OK to do this because ph1 is 4th and 1st quadrant, so don't need negative
+    cosine values */
+   const double cosU1 = 1 / sqrt(1 + tanU1 * tanU1);
+   const double cosU2 = 1 / sqrt(1 + tanU2 * tanU2);
+   const double sinU1 = tanU1 * cosU1;
+   const double sinU2 = tanU2 * cosU2;
+   const double U1 = asin(sinU1);
+   const double U2 = asin(sinU2);
+
+   // initial approximations and values
+   const double Lprime = L < 0 ? -M_PI - L : M_PI - L;
+   double lambdaPrime = 0;
+   double cosSqAlpha = 0.5;
+   double cos2SigmaM = 0;
+   double sigma = M_PI - fabs(U1 + U2);
+
+   double sinAlpha = sqrt(0.5);  // based on initial definition of cosSqAlpha
+   double oldSinAlpha;
+   double cosLambdaPrime;
+   double sinSigma;
+   double cosSigma;
+   double cosSq2SigmaM;
+   double sinSqSigma;
+   do {
+      /* 5 */
+      const double C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
+
+      /* 6 */
+      cosSigma = cos(sigma);
+      cos2SigmaM = cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha;
+
+      /* 7 */
+      cosSq2SigmaM = cos2SigmaM * cos2SigmaM;
+      sinSigma = sin(sigma);
+      sigma = asin(sigma);
+      const double D = (1 - C) * f * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cosSq2SigmaM)));
+
+      /* 8 */
+      oldSinAlpha = sinAlpha;
+      sinAlpha = (Lprime - lambdaPrime) / D;
+      cosSqAlpha = 1 - sinAlpha * sinAlpha;
+
+      /* 9 */
+      const double sinLambdaPrime = sinAlpha * sinSigma / (cosU1 * cosU2);
+      lambdaPrime = asin(sinLambdaPrime);
+
+      /* 10 */
+      // TODO loss of sign info
+      cosLambdaPrime = sqrt(1 - sinLambdaPrime * sinLambdaPrime);
+      const double t1 = cosU2 * sinLambdaPrime;
+      const double t2 = cosU1 * sinU2 + sinU1 * cosU2 * cosLambdaPrime;
+      sinSqSigma = t1 * t1 + t2 * t2;
+   } while (fabs(sinAlpha - oldSinAlpha) > 1e-12);
+
+   /* 11 */
+   const double sinAlpha1 = sinAlpha / cosU1;
+
+   /* 12 */
+   double cosAlpha1 = sqrt(1 - sinAlpha1 * sinAlpha1);
+
+   /* 13 */
+   if (cosU1 * sinU2 + sinU1 * cosU2 * cosLambdaPrime < 0) {
+      cosAlpha1 = -cosAlpha1;
+   }
+
+   /* 14 */
+   *alpha2 = atan2(sinAlpha, -sinU1 * sinSigma + cosU1 * cosSigma * cosAlpha1);
+
+   /* additional commentary */
+   *alpha1 = atan2(sinAlpha1, cosAlpha1);
+
+   /* 15 */
+   const double epsilon = (a * a - b * b) / (b * b);
+   const double E = sqrt(1 + epsilon * cosSqAlpha);
+
+   /* 16 */
+   const double F = (E - 1) / (E + 1);
+
+   /* 17 */
+   const double A = (1 + F * F / 4) / (1 - F);
+
+   /* 18 */
+   const double B = F * (1 - F * F * 3 / 8);
+
+   /* 19 */
+   const double deltaSigma = B * sinSigma * (cos2SigmaM + B / 4 * (cosSigma * (-1 + 2 * cosSq2SigmaM) - B / 6 * cos2SigmaM * (-3 + 4 * sinSqSigma) * (-3 + 4 * cosSq2SigmaM)));
+
+   /* 20 */
+   *s = b * A * (sigma - deltaSigma);
 }

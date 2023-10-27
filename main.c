@@ -42,9 +42,9 @@ int bearingcounts[sizeof (thresholds) / sizeof (double)] = {0};
 int main(void) {
    char buffer[1000];
    FILE* f = fopen("GeodTest.dat", "rt");
-   double maxThreshold = 0;
+   double maxThreshold = -1;
    TestCaseDegree maxTestCase;
-   double maxThreshold_rb = 0;
+   double maxThreshold_rb = -1;
    TestCaseDegree maxTestCase_rb;
    while (fgets(buffer, 999, f) != NULL) {
       /* read test case inputs */
