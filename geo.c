@@ -4,6 +4,8 @@
 #include <stdio.h>
 #include <assert.h>
 
+#include "wgs84.h"
+
 #define DEGREES(rad) (rad / M_PI * 180)
 #define RADIANS(deg) (deg / 180 * M_PI)
 
@@ -57,9 +59,9 @@ int rangeBearing(RangeBearingRadian* rb, PositionRadian start, PositionRadian en
 
 void direct(double* phi2, double* L, double* alpha2, double phi1, double s, double alpha1) {
    /* WGS-84 definitions */
-   const double a = 6378137.0;
-   const double f = 1 / 298.257223563;
-   const double b = a - a * f;
+   const double a = WGS84_A;
+   const double f = WGS84_F;
+   const double b = WGS84_B();
 
    const double tanU1 = (1 - f) * tan(phi1);
    /* OK to do this because ph1 is 4th and 1st quadrant, so don't need negative
@@ -134,9 +136,9 @@ int inverse(double* s, double* alpha1, double* alpha2,
             double phi1, double phi2, double L) {
 
    /* WGS-84 definitions */
-   const double a = 6378137.0;
-   const double f = 1 / 298.257223563;
-   const double b = a - a * f;
+   const double a = WGS84_A;
+   const double f = WGS84_F;
+   const double b = WGS84_B();
 
    /* setup */
    const double tanU1 = (1 - f) * tan(phi1);
@@ -239,9 +241,9 @@ void inverse2(double* s, double* alpha1, double* alpha2,
    }
 
    /* WGS-84 definitions */
-   const double a = 6378137.0;
-   const double f = 1 / 298.257223563;
-   const double b = a - a * f;
+   const double a = WGS84_A;
+   const double f = WGS84_F;
+   const double b = WGS84_B();
 
    // definitions
    const double tanU1 = (1 - f) * tan(phi1);
