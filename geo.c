@@ -9,30 +9,30 @@
 #define DEGREES(rad) (rad / M_PI * 180)
 #define RADIANS(deg) (deg / 180 * M_PI)
 
-void posToDegree(PositionDegree* out, PositionRadian in) {
+void posToDegree(PositionDegree* out, PositionRadian const in) {
    out->lat = DEGREES(in.lat);
    out->lon = DEGREES(in.lon);
 }
 
-void posToRadian(PositionRadian* out, PositionDegree in) {
+void posToRadian(PositionRadian* out, PositionDegree const in) {
    out->lat = RADIANS(in.lat);
    out->lon = RADIANS(in.lon);
 }
 
-void rbToDegree(RangeBearingDegree* out, RangeBearingRadian in) {
+void rbToDegree(RangeBearingDegree* out, RangeBearingRadian const in) {
    out->range = in.range;
    out->ini = DEGREES(in.ini);
    out->fin = DEGREES(in.fin);
 }
 
-void rbToRadian(RangeBearingRadian* out, RangeBearingDegree in) {
+void rbToRadian(RangeBearingRadian* out, RangeBearingDegree const in) {
    out->range = in.range;
    out->ini = RADIANS(in.ini);
    out->fin = RADIANS(in.fin);
 }
 
 void endpoint(PositionRadian* end, RangeBearingRadian* rb,
-              PositionRadian start) {
+              PositionRadian const start) {
    direct(&end->lat, &end->lon, &rb->fin, start.lat, rb->range, rb->ini);
    end->lon += start.lon;
    if (end->lon < -M_PI) {
@@ -46,7 +46,8 @@ void endpoint(PositionRadian* end, RangeBearingRadian* rb,
    }
 }
 
-int rangeBearing(RangeBearingRadian* rb, PositionRadian start, PositionRadian end) {
+int rangeBearing(RangeBearingRadian* rb, 
+                 PositionRadian const start, PositionRadian const end) {
    double L = end.lon - start.lon;
 //   if (L < -M_PI) {
 //      L += 2 * M_PI;
@@ -57,7 +58,9 @@ int rangeBearing(RangeBearingRadian* rb, PositionRadian start, PositionRadian en
    return inverse(&rb->range, &rb->ini, &rb->fin, start.lat, end.lat, L);
 }
 
-void direct(double* phi2, double* L, double* alpha2, double phi1, double s, double alpha1) {
+void direct(double* phi2, double* L, double* alpha2, 
+            double const phi1, double const s, double const alpha1) {
+
    /* WGS-84 definitions */
    const double a = WGS84_A;
    const double f = WGS84_F;
@@ -133,7 +136,7 @@ void direct(double* phi2, double* L, double* alpha2, double phi1, double s, doub
 }
 
 int inverse(double* s, double* alpha1, double* alpha2,
-            double phi1, double phi2, double L) {
+            double const phi1, double const phi2, double const L) {
 
    /* WGS-84 definitions */
    const double a = WGS84_A;
@@ -229,7 +232,7 @@ int inverse(double* s, double* alpha1, double* alpha2,
 
 // from the followup paper
 void inverse2(double* s, double* alpha1, double* alpha2,
-              const double phi1, const double phi2, const double L) {
+              double const phi1, double const phi2, double const L) {
 
    /* sanity check inputs */
    assert(!isnan(phi1) && fabs(phi1) <= M_PI/2);
