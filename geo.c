@@ -159,6 +159,11 @@ void direct(double* phi2, double* L, double* alpha2,
 int inverse(double* s, double* alpha1, double* alpha2,
             double const phi1, double const phi2, double const L) {
 
+   /* check inputs */
+   assert(!isnan(phi1) && fabs(phi1) <= M_PI / 2);
+   assert(!isnan(phi2) && fabs(phi2) <= M_PI / 2);
+   assert(!isnan(L) && fabs(L) <= M_PI);
+
    /* WGS-84 definitions */
    const double a = WGS84_A;
    const double f = WGS84_F;
@@ -177,49 +182,50 @@ int inverse(double* s, double* alpha1, double* alpha2,
    /* 13 */
    double lambda = L;
 
-   double sinLambda;
-   double cosLambda;
-   double term14;
-   double oldLambda;
-   double sigma;
-   double cosSq2SigmaM;
-   double sinSqSigma;
-   double cosSigma;
-   double cos2SigmaM;
-   double sinSigma;
-   double cosSqAlpha;
+   /* common */ double sinLambda;
+   /* common */ double cosLambda;
+   /* 14 */ double term14and20;
+   /* 14 */ double sinSqSigma;
+   /* 14 */ double sinSigma;
+   /* 15 */ double cosSigma;
+   /* 16 */ double sigma;
+   /* 17 */ double cosSqAlpha;
+   /* 18 */ double cos2SigmaM;
+   /* 18 */ double cosSq2SigmaM;
+   /* 11 */ double oldLambda;
    double iterCount = 0;
    do {
-      /* 14 */
+      /* common */
       sinLambda = sin(lambda);
       cosLambda = cos(lambda);
-      term14 = cosU1 * sinU2 - sinU1 * cosU2 * cosLambda;
-      sinSqSigma = (cosU2 * sinLambda) * (cosU2 * sinLambda) + term14 * term14;
+
+      /* 14 */
+      term14and20 = cosU1 * sinU2 - sinU1 * cosU2 * cosLambda;
+      sinSqSigma = (cosU2 * sinLambda) * (cosU2 * sinLambda) + term14and20 * term14and20;
+      sinSigma = sqrt(sinSqSigma);
 
       /* 15 */
       cosSigma = sinU1 * sinU2 + cosU1 * cosU2 * cosLambda;
 
       /* 16 */
-      // TODO is the loss of negative values an issue here?
-      sinSigma = sqrt(sinSqSigma);
       sigma = atan2(sinSigma, cosSigma);
 
       /* 17 */
-      double sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+      double const sinAlpha = cosU1 * cosU2 * sinLambda / sinSigma;
+      cosSqAlpha = 1 - sinAlpha * sinAlpha;
 
       /* 18 */
-      cosSqAlpha = 1 - sinAlpha * sinAlpha;
       cos2SigmaM = cosSigma - 2 * sinU1 * sinU2 / cosSqAlpha;
       cosSq2SigmaM = cos2SigmaM * cos2SigmaM;
 
       /* 10 */
-      const double C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
+      double const C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
 
       /* 11 */
       oldLambda = lambda;
       lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cosSq2SigmaM)));
 
-      if (fabs(lambda) >= M_PI) {
+      if (fabs(lambda) > M_PI) {
          return -1;
 //         printf("lambda is %e, switching to alternate method\n", lambda);
 //         inverse2(s, alpha1, alpha2, phi1, phi2, L);
@@ -242,8 +248,7 @@ int inverse(double* s, double* alpha1, double* alpha2,
    *s = b * A * (sigma - deltaSigma);
 
    /* 20 */
-   /* "The common term in 14 and 20 should be calculated once and reused." */
-   *alpha1 = atan2(cosU2 * sinLambda, term14);
+   *alpha1 = atan2(cosU2 * sinLambda, term14and20);
 
    /* 21 */
    *alpha2 = atan2(cosU1 * sinLambda, -sinU1 * cosU2 + cosU1 * sinU2 * cosLambda);
