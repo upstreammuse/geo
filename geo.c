@@ -58,6 +58,27 @@ int rangeBearing(RangeBearingRadian* rb,
    return inverse(&rb->range, &rb->ini, &rb->fin, start.lat, end.lat, L);
 }
 
+double* reducedLat(double const phi) {
+   static double retval[3];
+   double const f = WGS84_F;
+
+   /* tanU */
+   retval[2] = (1 - f) * tan(phi);
+   assert(!isnan(retval[2]));
+
+   /* cosU */
+   /* OK to do this because ph1 is 4th and 1st quadrant, so don't need negative
+    cosine values */
+   retval[1] = 1 / sqrt(1 + retval[2] * retval[2]);
+   assert(!isnan(retval[1]) && retval[1] >= 0 && retval[1] <= 1);
+
+   /* sinU */
+   retval[0] = retval[1] * retval[2];
+   assert(!isnan(retval[0]) && fabs(retval[0]) <= 1);
+
+   return retval;
+}
+
 void direct(double* phi2, double* L, double* alpha2, 
             double const phi1, double const s, double const alpha1) {
 
@@ -66,11 +87,11 @@ void direct(double* phi2, double* L, double* alpha2,
    const double f = WGS84_F;
    const double b = WGS84_B();
 
-   const double tanU1 = (1 - f) * tan(phi1);
-   /* OK to do this because ph1 is 4th and 1st quadrant, so don't need negative
-    cosine values */
-   const double cosU1 = 1 / sqrt(1 + tanU1 * tanU1);
-   const double sinU1 = tanU1 * cosU1;
+   /* reduced latitudes */
+   double const* const U1 = reducedLat(phi1);
+   double const sinU1 = U1[0];
+   double const cosU1 = U1[1];
+   double const tanU1 = U1[2];
 
    /* (1) */
    const double cosAlpha1 = cos(alpha1);
@@ -143,15 +164,15 @@ int inverse(double* s, double* alpha1, double* alpha2,
    const double f = WGS84_F;
    const double b = WGS84_B();
 
-   /* setup */
-   const double tanU1 = (1 - f) * tan(phi1);
-   const double tanU2 = (1 - f) * tan(phi2);
-   /* OK to do this because ph1 is 4th and 1st quadrant, so don't need negative
-    cosine values */
-   const double cosU1 = 1 / sqrt(1 + tanU1 * tanU1);
-   const double cosU2 = 1 / sqrt(1 + tanU2 * tanU2);
-   const double sinU1 = tanU1 * cosU1;
-   const double sinU2 = tanU2 * cosU2;
+   /* reduced latitudes */
+   double const* const U1 = reducedLat(phi1);
+   double const sinU1 = U1[0];
+   double const cosU1 = U1[1];
+   double const tanU1 = U1[2];
+   double const* const U2 = reducedLat(phi2);
+   double const sinU2 = U2[0];
+   double const cosU2 = U2[1];
+   double const tanU2 = U2[2];
 
    /* 13 */
    double lambda = L;
@@ -248,25 +269,17 @@ void inverse2(double* s, double* alpha1, double* alpha2,
    const double f = WGS84_F;
    const double b = WGS84_B();
 
-   // definitions
-   const double tanU1 = (1 - f) * tan(phi1);
-   assert(!isnan(tanU1));
-   const double tanU2 = (1 - f) * tan(phi2);
-   assert(!isnan(tanU2));
-   /* OK to do this because ph1 is 4th and 1st quadrant, so don't need negative
-    cosine values */
-   const double cosU1 = 1 / sqrt(1 + tanU1 * tanU1);
-   assert(!isnan(cosU1) && cosU1 >= 0 && cosU1 <= 1);
-   const double cosU2 = 1 / sqrt(1 + tanU2 * tanU2);
-   assert(!isnan(cosU2) && cosU2 >= 0 && cosU2 <= 1);
-   const double sinU1 = tanU1 * cosU1;
-   assert(!isnan(sinU1) && fabs(sinU1) <= 1);
-   const double sinU2 = tanU2 * cosU2;
-   assert(!isnan(sinU2) && fabs(sinU2) <= 1);
-   const double U1 = asin(sinU1);
-   assert(!isnan(U1) && fabs(U1) <= fabs(phi1));
-   const double U2 = asin(sinU2);
-   assert(!isnan(U2) && fabs(U2) <= fabs(phi2));
+   /* reduced latitudes */
+   double const* const U1set = reducedLat(phi1);
+   double const sinU1 = U1set[0];
+   double const cosU1 = U1set[1];
+   double const tanU1 = U1set[2];
+   double const U1 = asin(sinU1);
+   double const* const U2set = reducedLat(phi2);
+   double const sinU2 = U2set[0];
+   double const cosU2 = U2set[1];
+   double const tanU2 = U2set[2];
+   double const U2 = asin(sinU2);
 
    // initial approximations and values
    const double Lprime = (L < 0) ? (-M_PI - L) : (M_PI - L);
