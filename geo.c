@@ -227,7 +227,7 @@ int inverse(double* s, double* alpha1, double* alpha2,
 
       if (fabs(lambda) > M_PI) {
 //         return -1;
-//         printf("lambda is %e, switching to alternate method\n", lambda);
+         printf("lambda is %e, switching to alternate method\n", lambda);
          return inverse2(s, alpha1, alpha2, phi1, phi2, L);
       }
 
@@ -311,21 +311,19 @@ int inverse2(double* s, double* alpha1, double* alpha2,
       /* 6 */
 //      printf("cosSqAlpha=%e\n", cosSqAlpha);
 //      assert(cosSqAlpha != 0);
-      if (cosSqAlpha == 0) {
-         cos2SigmaM = 0;
-      } else {
-         printf("sigma=%e sinU1=%e sinU2=%e cosSqAlpha=%e\n", sigma, sinU1, sinU2, cosSqAlpha);
+      assert(cosSqAlpha != 0);
+//         printf("sigma=%e sinU1=%e sinU2=%e cosSqAlpha=%e\n", sigma, sinU1, sinU2, cosSqAlpha);
          cos2SigmaM = cos(sigma) - 2 * sinU1 * sinU2 / cosSqAlpha;
-      }
 //      printf("cos2SM=%e\n", cos2SigmaM);
 //      if (cos2SigmaM < -1 || cos2SigmaM > 1) {
 //         printf("correcting cos2SigmaM out of range\n");
 //         if (cos2SigmaM < -1) cos2SigmaM = -1;
 //         if (cos2SigmaM > 1) cos2SigmaM = 1;
 //      }
-      assert(!isnan(cos2SigmaM) && fabs(cos2SigmaM) <= 1);
+//      assert(!isnan(cos2SigmaM) && fabs(cos2SigmaM) <= 1);
 //      if (isnan(cos2SigmaM) || fabs(cos2SigmaM) > 1) return -1;
 //      if (isnan(cos2SigmaM)) return -1;
+      assert(!isnan(cos2SigmaM)); // allow errors here that fall out later (in 7?)
 
       /* 7 */
       const double D = (1 - C) * f * (sigma + C * sin(sigma) * (cos2SigmaM + C * cos(sigma) * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
