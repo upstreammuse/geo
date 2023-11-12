@@ -226,10 +226,9 @@ int inverse(double* s, double* alpha1, double* alpha2,
       lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cosSq2SigmaM)));
 
       if (fabs(lambda) > M_PI) {
-         return -1;
+//         return -1;
 //         printf("lambda is %e, switching to alternate method\n", lambda);
-//         inverse2(s, alpha1, alpha2, phi1, phi2, L);
-//         return;
+         return inverse2(s, alpha1, alpha2, phi1, phi2, L);
       }
 
    } while (fabs(lambda - oldLambda) > 1e-12 && iterCount++ < 1000);
@@ -256,18 +255,20 @@ int inverse(double* s, double* alpha1, double* alpha2,
    return 0;
 }
 
+int sign(double x) {
+   if (x < 0) return -1;
+   if (x > 0) return 1;
+   return 0;
+}
+
 // from the followup paper
-void inverse2(double* s, double* alpha1, double* alpha2,
-              double const phi1, double const phi2, double const L) {
+int inverse2(double* s, double* alpha1, double* alpha2,
+             double const phi1, double const phi2, double const L) {
 
    /* sanity check inputs */
    assert(!isnan(phi1) && fabs(phi1) <= M_PI/2);
    assert(!isnan(phi2) && fabs(phi2) <= M_PI/2);
    assert(!isnan(L) && fabs(L) <= M_PI);
-
-   if (phi1 == -phi2) {
-      printf("Special case alert!\n");
-   }
 
    /* WGS-84 definitions */
    const double a = WGS84_A;
@@ -280,42 +281,51 @@ void inverse2(double* s, double* alpha1, double* alpha2,
    double const cosU1 = U1set[1];
    double const tanU1 = U1set[2];
    double const U1 = asin(sinU1);
+   assert(sign(U1) == sign(phi1));
    double const* const U2set = reducedLat(phi2);
    double const sinU2 = U2set[0];
    double const cosU2 = U2set[1];
    double const tanU2 = U2set[2];
    double const U2 = asin(sinU2);
+   assert(sign(U2) == sign(phi2));
 
    // initial approximations and values
-   const double Lprime = (L < 0) ? (-M_PI - L) : (M_PI - L);
+   const double Lprime = (L > 0) ? (M_PI - L) : (-M_PI - L);
    assert(!isnan(Lprime) && fabs(Lprime) <= M_PI);
    /* 6 */ double cos2SigmaM = 0;
    /* 8 */ double cosSqAlpha = 0.5;
    /* 8 */ double oldSinAlpha;
-   /* 8 */ double sinAlpha = sqrt(1 - cosSqAlpha);
+   /* 8 */ double sinAlpha = 1000;  /* obviously out of range, for first loop */
    /* 9 */ double lambdaPrime = 0;
    /* 10 */ double sigma = M_PI - fabs(U1 + U2);
-   assert(!isnan(sigma) && fabs(sigma) <= M_PI);
+   assert(!isnan(sigma) && sigma >= M_PI / 2 && sigma <= M_PI);
    int iterCount = 0;
    do {
       /* 5 */
-      printf("cosSqAlpha=%e\n", cosSqAlpha);
-      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
+//      printf("cosSqAlpha=%e\n", cosSqAlpha);
+//      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
       const double C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
-      printf("C=%e\n", C);
-      assert(!isnan(C));
+//      printf("C=%e\n", C);
+      assert(!isnan(C) && C >= 0 && C <= (f / 16 * (4 + f)));
 
       /* 6 */
-      printf("cosSqAlpha=%e\n", cosSqAlpha);
-      assert(cosSqAlpha != 0);
-      cos2SigmaM = cos(sigma) - 2 * sinU1 * sinU2 / cosSqAlpha;
-      printf("cos2SM=%e\n", cos2SigmaM);
-      if (cos2SigmaM < -1 || cos2SigmaM > 1) {
-         printf("correcting cos2SigmaM out of range\n");
-         if (cos2SigmaM < -1) cos2SigmaM = -1;
-         if (cos2SigmaM > 1) cos2SigmaM = 1;
+//      printf("cosSqAlpha=%e\n", cosSqAlpha);
+//      assert(cosSqAlpha != 0);
+      if (cosSqAlpha == 0) {
+         cos2SigmaM = 0;
+      } else {
+         printf("sigma=%e sinU1=%e sinU2=%e cosSqAlpha=%e\n", sigma, sinU1, sinU2, cosSqAlpha);
+         cos2SigmaM = cos(sigma) - 2 * sinU1 * sinU2 / cosSqAlpha;
       }
+//      printf("cos2SM=%e\n", cos2SigmaM);
+//      if (cos2SigmaM < -1 || cos2SigmaM > 1) {
+//         printf("correcting cos2SigmaM out of range\n");
+//         if (cos2SigmaM < -1) cos2SigmaM = -1;
+//         if (cos2SigmaM > 1) cos2SigmaM = 1;
+//      }
       assert(!isnan(cos2SigmaM) && fabs(cos2SigmaM) <= 1);
+//      if (isnan(cos2SigmaM) || fabs(cos2SigmaM) > 1) return -1;
+//      if (isnan(cos2SigmaM)) return -1;
 
       /* 7 */
       const double D = (1 - C) * f * (sigma + C * sin(sigma) * (cos2SigmaM + C * cos(sigma) * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
@@ -323,33 +333,40 @@ void inverse2(double* s, double* alpha1, double* alpha2,
 
       /* 8 */
       oldSinAlpha = sinAlpha;
-      assert(!isnan(oldSinAlpha) && fabs(oldSinAlpha) <= 1);
-      printf("L'=%e l'=%e D=%e\n", Lprime, lambdaPrime, D);
+//      assert(!isnan(oldSinAlpha) && fabs(oldSinAlpha) <= 1);
+//      printf("L'=%e l'=%e D=%e\n", Lprime, lambdaPrime, D);
       sinAlpha = (Lprime - lambdaPrime) / D;
-      printf("sinAlpha=%e\n", sinAlpha);
-      assert(!isnan(sinAlpha) && fabs(sinAlpha) <= 1);
+//      printf("sinAlpha=%e\n", sinAlpha);
+//      assert(!isnan(sinAlpha) && fabs(sinAlpha) <= 1);
+      if (isnan(sinAlpha) || fabs(sinAlpha) > 1) return -1;
       cosSqAlpha = 1 - sinAlpha * sinAlpha;
-      printf("cosSqAlpha=%e\n", cosSqAlpha);
-      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
+//      printf("cosSqAlpha=%e\n", cosSqAlpha);
+//      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
+      if (isnan(cosSqAlpha) || sqrt(cosSqAlpha) > 1) return -1;
 
       /* 9 */
-      printf("sA=%e sS=%e cU1=%e cU2=%e\n", sinAlpha, sin(sigma), cosU1, cosU2);
+//      printf("sA=%e sS=%e cU1=%e cU2=%e\n", sinAlpha, sin(sigma), cosU1, cosU2);
       const double sinLambdaPrime = sinAlpha * sin(sigma) / (cosU1 * cosU2);
-      printf("sinl'=%e\n", sinLambdaPrime);
-      assert(!isnan(sinLambdaPrime) && fabs(sinLambdaPrime) <= 1);
+//      printf("sinl'=%e\n", sinLambdaPrime);
+//      assert(!isnan(sinLambdaPrime) && fabs(sinLambdaPrime) <= 1);
+      if (isnan(sinLambdaPrime) || fabs(sinLambdaPrime) > 1) return -1;
       lambdaPrime = asin(sinLambdaPrime);
-      printf("l'=%e\n", lambdaPrime);
+//      printf("l'=%e\n", lambdaPrime);
       assert(!isnan(lambdaPrime));
 
       /* 10 */
       const double t1 = cosU2 * sinLambdaPrime;
       const double t2 = cosU1 * sinU2 + sinU1 * cosU2 * cos(lambdaPrime);
       const double sinSqSigma = t1 * t1 + t2 * t2;
-      printf("sinSqSigma=%e\n", sinSqSigma);
+//      printf("sinSqSigma=%e\n", sinSqSigma);
       assert(!isnan(sinSqSigma) && fabs(sqrt(sinSqSigma)) <= 1);
       sigma = asin(sqrt(sinSqSigma));
-      printf("sigma=%e\n", sigma);
-      assert(!isnan(sigma) && fabs(sigma) <= M_PI);
+//      printf("sigma=%e\n", sigma);
+//      printf("sigma=%e\n", sigma);
+      assert(!isnan(sigma) && sigma >= 0 && sigma <= M_PI / 2);
+//      sigma += M_PI / 2;  /* sigma is an antipodal angle, not what asin() gives */
+      sigma = M_PI - sigma;  /* do the math correctly */
+      assert(!isnan(sigma) && sigma >= M_PI / 2 && sigma <= M_PI);
    } while (fabs(sinAlpha - oldSinAlpha) > 1e-12 && iterCount++ < 1000);
 
    const double sinSigma = sin(sigma);
@@ -400,4 +417,6 @@ void inverse2(double* s, double* alpha1, double* alpha2,
    *s = b * A * (sigma - deltaSigma);
    assert(!isnan(*s));
 //   printf("%e\n", *s);
+
+   return 0;
 }
