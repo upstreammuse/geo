@@ -3,6 +3,10 @@
 #include <stdio.h>
 #include "geo.h"
 
+const double thresholds[] = {
+   1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1, 1000, 1e100
+};
+
 typedef struct {
    PositionDegree start;
    PositionDegree end;
@@ -90,23 +94,42 @@ void endpointTest(TestCaseDegree const tc) {
 }
 
 struct {
+   int iniErrors[sizeof (thresholds) / sizeof (double)];
    double maxIniError;
    TestCaseDegree maxIniErrorCase;
+   int finErrors[sizeof (thresholds) / sizeof (double)];
    double maxFinError;
    TestCaseDegree maxFinErrorCase;
+   int rangeErrors[sizeof (thresholds) / sizeof (double)];
    double maxRangeError;
    TestCaseDegree maxRangeErrorCase;
    int numfails;
    int numtests;
-} rangeBearingResults = {.maxIniError = -1, .maxFinError = -1, .maxRangeError = -1, .numfails = 0, .numtests = 0};
+} rangeBearingResults = {.iniErrors = {0}, .maxIniError = -1, .finErrors = {0}, .maxFinError = -1, .rangeErrors = {0}, .maxRangeError = -1, .numfails = 0, .numtests = 0};
 
 void printRangeBearingResults() {
+   int i;
    printf("===Range Bearing Results===\n");
+   printf("Initial bearing errors:\n");
+   for (i = 0; i < sizeof (thresholds) / sizeof (double); i++) {
+      printf("%d ", rangeBearingResults.iniErrors[i]);
+   }
+   printf("\n");
    printf("Worst initial bearing error: %e\n", rangeBearingResults.maxIniError);
    printTestCaseDegree(rangeBearingResults.maxIniErrorCase);
    printf("\n");
+   printf("Final bearing errors:\n");
+   for (i = 0; i < sizeof (thresholds) / sizeof (double); i++) {
+      printf("%d ", rangeBearingResults.finErrors[i]);
+   }
+   printf("\n");
    printf("Worst final bearing error: %e\n", rangeBearingResults.maxFinError);
    printTestCaseDegree(rangeBearingResults.maxFinErrorCase);
+   printf("\n");
+   printf("Range errors:\n");
+   for (i = 0; i < sizeof (thresholds) / sizeof (double); i++) {
+      printf("%d ", rangeBearingResults.rangeErrors[i]);
+   }
    printf("\n");
    printf("Worst range error: %e\n", rangeBearingResults.maxRangeError);
    printTestCaseDegree(rangeBearingResults.maxRangeErrorCase);
@@ -115,6 +138,7 @@ void printRangeBearingResults() {
 }
 
 void rangeBearingTest(TestCaseDegree const tc) {
+   int i;
    /* run the test case and convert as needed */
    TestCaseRadian workingR;
    tcToRadian(&workingR, tc);
@@ -135,28 +159,27 @@ void rangeBearingTest(TestCaseDegree const tc) {
 
    /* compare results to test case */
    double error = fabs(tc.rb.ini - workingD.rb.ini);
+   for (i = 0; error > thresholds[i]; i++) ;
+   rangeBearingResults.iniErrors[i]++;
    if (error > rangeBearingResults.maxIniError) {
       rangeBearingResults.maxIniError = error;
       rangeBearingResults.maxIniErrorCase = tc;
    }
    error = fabs(tc.rb.fin - workingD.rb.fin);
+   for (i = 0; error > thresholds[i]; i++) ;
+   rangeBearingResults.finErrors[i]++;
    if (error > rangeBearingResults.maxFinError) {
       rangeBearingResults.maxFinError = error;
       rangeBearingResults.maxFinErrorCase = tc;
    }
    error = fabs(tc.rb.range - workingD.rb.range);
+   for (i = 0; error > thresholds[i]; i++) ;
+   rangeBearingResults.rangeErrors[i]++;
    if (error > rangeBearingResults.maxRangeError) {
       rangeBearingResults.maxRangeError = error;
       rangeBearingResults.maxRangeErrorCase = tc;
    }
 }
-
-//const double thresholds[] = {
-//   1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1, 1000, 1e100
-//};
-//int latcounts[sizeof (thresholds) / sizeof (double)] = {0};
-//int loncounts[sizeof (thresholds) / sizeof (double)] = {0};
-//int bearingcounts[sizeof (thresholds) / sizeof (double)] = {0};
 
 int main(void) {
    char buffer[1000];
