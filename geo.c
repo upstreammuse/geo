@@ -35,13 +35,13 @@ void endpoint(PositionRadian* end, RangeBearingRadian* rb,
               PositionRadian const start) {
    direct(&end->lat, &end->lon, &rb->fin, start.lat, rb->range, rb->ini);
    end->lon += start.lon;
-   if (end->lon < -M_PI) {
+   while (end->lon < -M_PI) {
       end->lon += 2 * M_PI;
    }
-   if (end->lon > M_PI) {
+   while (end->lon > M_PI) {
       end->lon -= 2 * M_PI;
    }
-   if (rb->fin < 0) {
+   while (rb->fin < 0) {
       rb->fin += 2 * M_PI;
    }
 }
@@ -141,6 +141,7 @@ void direct(double* phi2, double* L, double* alpha2,
    const double term8and12 = sinU1 * sinSigma - cosU1 * cosSigma * cosAlpha1;
    *phi2 = atan2(sinU1 * cosSigma + cosU1 * sinSigma * cosAlpha1,
                  (1 - f) * sqrt(sinSqAlpha + term8and12 * term8and12));
+   assert(!isnan(*phi2) && fabs(*phi2) <= M_PI / 2);
 
    /* 9 */
    const double lambda = atan2(sinSigma * sinAlpha1,
@@ -151,9 +152,11 @@ void direct(double* phi2, double* L, double* alpha2,
 
    /* 11 */
    *L = lambda - (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cosTwoSigmaM + C * cosSigma * (-1 + 2 * cosSqTwoSigmaM)));
+   assert(!isnan(*L));
 
    /* 12 */
    *alpha2 = atan2(sinAlpha, -term8and12);
+   assert(!isnan(*alpha2) && *alpha2 >= 0 && *alpha2 <= 2 * M_PI);
 }
 
 int inverse(double* s, double* alpha1, double* alpha2,
