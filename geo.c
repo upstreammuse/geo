@@ -228,8 +228,6 @@ int inverse(double* s, double* alpha1, double* alpha2,
       oldLambda = lambda;
       lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cosSq2SigmaM)));
 
-//         return -1;
-         printf("lambda is %e, switching to alternate method\n", lambda);
       if (fabs(lambda) >= M_PI) {
          return inverse2(s, alpha1, alpha2, phi1, phi2, L);
       }
@@ -305,27 +303,13 @@ int inverse2(double* s, double* alpha1, double* alpha2,
    int iterCount = 0;
    do {
       /* 5 */
-//      printf("cosSqAlpha=%e\n", cosSqAlpha);
-//      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
       const double C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
-//      printf("C=%e\n", C);
 
       /* 6 */
-//      printf("cosSqAlpha=%e\n", cosSqAlpha);
-//      assert(cosSqAlpha != 0);
       assert(cosSqAlpha != 0);
-//         printf("sigma=%e sinU1=%e sinU2=%e cosSqAlpha=%e\n", sigma, sinU1, sinU2, cosSqAlpha);
-         cos2SigmaM = cos(sigma) - 2 * sinU1 * sinU2 / cosSqAlpha;
-//      printf("cos2SM=%e\n", cos2SigmaM);
-//      if (cos2SigmaM < -1 || cos2SigmaM > 1) {
-//         printf("correcting cos2SigmaM out of range\n");
-//         if (cos2SigmaM < -1) cos2SigmaM = -1;
-//         if (cos2SigmaM > 1) cos2SigmaM = 1;
-//      }
-//      assert(!isnan(cos2SigmaM) && fabs(cos2SigmaM) <= 1);
-//      if (isnan(cos2SigmaM) || fabs(cos2SigmaM) > 1) return -1;
-//      if (isnan(cos2SigmaM)) return -1;
-      assert(!isnan(cos2SigmaM)); // allow errors here that fall out later (in 7?)
+      cos2SigmaM = cos(sigma) - 2 * sinU1 * sinU2 / cosSqAlpha;
+      /* per the paper, can't assume anything about this value */
+      assert(!isnan(cos2SigmaM));
 
       /* 7 */
       const double D = (1 - C) * f * (sigma + C * sin(sigma) * (cos2SigmaM + C * cos(sigma) * (-1 + 2 * cos2SigmaM * cos2SigmaM)));
@@ -333,38 +317,25 @@ int inverse2(double* s, double* alpha1, double* alpha2,
 
       /* 8 */
       oldSinAlpha = sinAlpha;
-//      assert(!isnan(oldSinAlpha) && fabs(oldSinAlpha) <= 1);
-//      printf("L'=%e l'=%e D=%e\n", Lprime, lambdaPrime, D);
       sinAlpha = (Lprime - lambdaPrime) / D;
-//      printf("sinAlpha=%e\n", sinAlpha);
-//      assert(!isnan(sinAlpha) && fabs(sinAlpha) <= 1);
       cosSqAlpha = 1 - sinAlpha * sinAlpha;
-//      printf("cosSqAlpha=%e\n", cosSqAlpha);
-//      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
       if (isnan(cosSqAlpha) || sqrt(cosSqAlpha) > 1) return -1;
 
       /* 9 */
-//      printf("sA=%e sS=%e cU1=%e cU2=%e\n", sinAlpha, sin(sigma), cosU1, cosU2);
       const double sinLambdaPrime = sinAlpha * sin(sigma) / (cosU1 * cosU2);
-//      printf("sinl'=%e\n", sinLambdaPrime);
-//      assert(!isnan(sinLambdaPrime) && fabs(sinLambdaPrime) <= 1);
       if (isnan(sinLambdaPrime) || fabs(sinLambdaPrime) > 1) return -1;
       lambdaPrime = asin(sinLambdaPrime);
-//      printf("l'=%e\n", lambdaPrime);
       assert(!isnan(lambdaPrime));
 
       /* 10 */
       const double t1 = cosU2 * sinLambdaPrime;
       const double t2 = cosU1 * sinU2 + sinU1 * cosU2 * cos(lambdaPrime);
       const double sinSqSigma = t1 * t1 + t2 * t2;
-//      printf("sinSqSigma=%e\n", sinSqSigma);
       assert(!isnan(sinSqSigma) && fabs(sqrt(sinSqSigma)) <= 1);
       sigma = asin(sqrt(sinSqSigma));
-//      printf("sigma=%e\n", sigma);
-//      printf("sigma=%e\n", sigma);
       assert(!isnan(sigma) && sigma >= 0 && sigma <= M_PI / 2);
-//      sigma += M_PI / 2;  /* sigma is an antipodal angle, not what asin() gives */
-      sigma = M_PI - sigma;  /* do the math correctly */
+      /* sigma is an antipodal angle in Q2, and needs mirroring from Q1 results */
+      sigma = M_PI - sigma;
       assert(!isnan(sigma) && sigma >= M_PI / 2 && sigma <= M_PI);
    } while (fabs(sinAlpha - oldSinAlpha) > 1e-12 && iterCount++ < 1000);
 
@@ -395,17 +366,13 @@ int inverse2(double* s, double* alpha1, double* alpha2,
 
    /* 15 */
    const double epsilon = (a * a - b * b) / (b * b);
-//   printf("epsilon=%e\n", epsilon);
    const double E = sqrt(1 + epsilon * cosSqAlpha);
-//   printf("E=%e\n", E);
 
    /* 16 */
    const double F = (E - 1) / (E + 1);
-//   printf("F=%e\n", F);
 
    /* 17 */
    const double A = (1 + F * F / 4) / (1 - F);
-//   printf("A=%e\n", A);
 
    /* 18 */
    const double B = F * (1 - F * F * 3 / 8);
@@ -416,7 +383,6 @@ int inverse2(double* s, double* alpha1, double* alpha2,
    /* 20 */
    *s = b * A * (sigma - deltaSigma);
    assert(!isnan(*s));
-//   printf("%e\n", *s);
 
    return 0;
 }
