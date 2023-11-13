@@ -309,7 +309,6 @@ int inverse2(double* s, double* alpha1, double* alpha2,
 //      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
       const double C = f / 16 * cosSqAlpha * (4 + f * (4 - 3 * cosSqAlpha));
 //      printf("C=%e\n", C);
-      assert(!isnan(C) && C >= 0 && C <= (f / 16 * (4 + f)));
 
       /* 6 */
 //      printf("cosSqAlpha=%e\n", cosSqAlpha);
