@@ -228,9 +228,9 @@ int inverse(double* s, double* alpha1, double* alpha2,
       oldLambda = lambda;
       lambda = L + (1 - C) * f * sinAlpha * (sigma + C * sinSigma * (cos2SigmaM + C * cosSigma * (-1 + 2 * cosSq2SigmaM)));
 
-      if (fabs(lambda) > M_PI) {
 //         return -1;
          printf("lambda is %e, switching to alternate method\n", lambda);
+      if (fabs(lambda) >= M_PI) {
          return inverse2(s, alpha1, alpha2, phi1, phi2, L);
       }
 
