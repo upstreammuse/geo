@@ -4,7 +4,7 @@
 #include "geo.h"
 
 const double thresholds[] = {
-   1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1, 1000, 1e100
+   1e-12, 1e-11, 1e-10, 1e-9, 1e-8, 1e-7, 1e-6, 1e-5, 1e-4, 1, 1e100
 };
 
 typedef struct {
