@@ -387,11 +387,11 @@ int inverse2(double* s, double* alpha1, double* alpha2,
 
    /* 14 */
    *alpha2 = atan2(sinAlpha, -sinU1 * sin(sigma) + cosU1 * cos(sigma) * cosAlpha1);
-   assert(!isnan(*alpha2));
+   assert(!isnan(*alpha2) && *alpha1 >= 0 && *alpha1 <= 2 * M_PI);
 
    /* additional commentary */
    *alpha1 = atan2(sinAlpha1, cosAlpha1);
-   assert(!isnan(*alpha1));
+   assert(!isnan(*alpha1) && *alpha1 >= 0 && *alpha1 <= 2 * M_PI);
 
    /* 15 */
    const double epsilon = (a * a - b * b) / (b * b);
