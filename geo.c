@@ -338,7 +338,6 @@ int inverse2(double* s, double* alpha1, double* alpha2,
       sinAlpha = (Lprime - lambdaPrime) / D;
 //      printf("sinAlpha=%e\n", sinAlpha);
 //      assert(!isnan(sinAlpha) && fabs(sinAlpha) <= 1);
-      if (isnan(sinAlpha) || fabs(sinAlpha) > 1) return -1;
       cosSqAlpha = 1 - sinAlpha * sinAlpha;
 //      printf("cosSqAlpha=%e\n", cosSqAlpha);
 //      assert(!isnan(cosSqAlpha) && fabs(sqrt(cosSqAlpha)) <= 1);
