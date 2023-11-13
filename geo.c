@@ -374,7 +374,8 @@ int inverse2(double* s, double* alpha1, double* alpha2,
    const double sinSqSigma = sinSigma * sinSigma;
 
    /* 11 */
-   const double sinAlpha1 = sinAlpha / cosU1;
+   // FIXME? this should not go out of range like this
+   const double sinAlpha1 = (sinAlpha / cosU1) > 1 ? 1 : (sinAlpha / cosU1);
 
    /* 12 */
    double cosAlpha1 = sqrt(1 - sinAlpha1 * sinAlpha1);
